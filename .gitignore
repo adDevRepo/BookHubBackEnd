@@ -1,0 +1,26 @@
+# Build outputs
+build/
+.gradle/
+.gradle-version-catalogs
+
+# Logs
+*.log
+logs/
+
+# IDE
+.idea/
+.vscode/
+*.iml
+.settings/
+
+# Sensibles
+src/main/resources/application-local*.properties
+src/main/resources/application-*.yml
+.env
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Wrapper (commit gradlew !)
+!gradle/wrapper/gradle-wrapper.jar
