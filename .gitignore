@@ -13,9 +13,8 @@ logs/
 *.iml
 .settings/
 
-# Sensibles
-src/main/resources/application.properties
-src/main/resources/application.yml
+.properties
+.yml
 .env
 
 # OS
