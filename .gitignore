@@ -14,8 +14,8 @@ logs/
 .settings/
 
 # Sensibles
-.properties
-.yml
+src/main/resources/application.properties
+src/main/resources/application.yml
 .env
 
 # OS
