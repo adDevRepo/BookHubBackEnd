@@ -3,6 +3,7 @@ package fr.bookHub.bo;
 
 import fr.bookHub.bo.enums.NomRole;
 import jakarta.persistence.*;
+import jakarta.validation.constraints.NotNull;
 import lombok.*;
 
 import java.io.Serializable;
@@ -29,6 +30,7 @@ public class Role implements Serializable {
 
     @Enumerated(EnumType.STRING)
     @Column(name = "name", nullable = false, unique = true, length = 20)
+    @NotNull(message = "Le nom du rôle est obligatoire")
     private NomRole nom;
 
 }
