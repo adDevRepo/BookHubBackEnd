@@ -57,10 +57,10 @@ public class Utilisateur implements Serializable {
     @NotNull(message = "L'utilisateur doit avoir un rôle assigné")
     private Role role;
 
-    @Column(name = "phone_number", nullable = true, length = 20)
+    @Column(name = "phone_number", nullable = true, length = 10)
     @Pattern(
-            regexp = "^[\\+]?[(]?[0-9]{3}[)]?[-\\s\\.]?[0-9]{3}[-\\s\\.]?[0-9]{4,6}$",
-            message = "Format de téléphone invalide (Ex: 0612345678 ou +336...)"
+            regexp = "^\\d{10}$",
+            message = "Le numéro doit contenir exactement 10 chiffres, sans espaces ni indicatif (Ex: 0612345678)"
     )
     private String numTelephone;
 
