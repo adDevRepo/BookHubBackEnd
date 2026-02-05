@@ -2,6 +2,7 @@ package fr.bookHub.bo;
 
 import fr.bookHub.bo.enums.StatutEmprunt;
 import jakarta.persistence.*;
+import jakarta.validation.constraints.NotNull;
 import lombok.*;
 import java.io.Serializable;
 import java.time.LocalDate;
@@ -38,16 +39,19 @@ public class Emprunt implements Serializable {
 
     @Enumerated(EnumType.STRING)
     @Column(name = "status", nullable = false, length = 20)
+    @NotNull(message = "Le statut de l'emprunt est obligatoire")
     private StatutEmprunt statut;
 
     // --- RELATIONS ---
 
     @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "user_id", nullable = false)
+    @NotNull(message = "L'emprunt doit être lié à un utilisateur")
     private Utilisateur utilisateur;
 
     @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "book_id", nullable = false)
+    @NotNull(message = "L'emprunt doit concerner un livre")
     private Livre livre;
 
     /**
@@ -63,6 +67,10 @@ public class Emprunt implements Serializable {
         }
         if (this.statut == null) {
             this.statut = StatutEmprunt.EN_COURS;
+        }
+        // Calcul automatique de la date de retour (J+14) si non fournie
+        if (this.dateRetourPrevue == null && this.dateEmprunt != null) {
+            this.dateRetourPrevue = this.dateEmprunt.plusDays(14);
         }
     }
 }

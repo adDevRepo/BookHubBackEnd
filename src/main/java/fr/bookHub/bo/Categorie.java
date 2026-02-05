@@ -1,6 +1,9 @@
 package fr.bookHub.bo;
 
 import jakarta.persistence.*;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Pattern;
+import jakarta.validation.constraints.Size;
 import lombok.*;
 import java.io.Serializable;
 
@@ -25,25 +28,39 @@ public class Categorie implements Serializable {
 
     // Le nom affiché à l'utilisateur (ex: "Science-Fiction")
     @Column(name = "name", nullable = false, length = 100)
+    @NotBlank(message = "Le nom de la catégorie est obligatoire")
+    @Size(max = 100, message = "Le nom ne doit pas dépasser 100 caractères")
     private String nom;
 
     // Le code technique stable (ex: "SCIFI")
     // Utile pour le front-end (icônes) ou les URLs
     @Column(name = "code", nullable = false, unique = true, length = 50)
+    @NotBlank(message = "Le code catégorie est obligatoire")
+    @Size(max = 50, message = "Le code ne doit pas dépasser 50 caractères")
+    // Regex : Lettres (min/maj), chiffres et underscore uniquement.
+    // Pas d'espaces, pas de caractères spéciaux bizarres.
+    @Pattern(
+            regexp = "^[a-zA-Z0-9_]+$",
+            message = "Le code ne doit contenir que des lettres, des chiffres ou des underscores (ex: SCI_FI)"
+    )
     private String code;
 
 
     /**
-     * ASTUCE : Normalisation des données.
+     * Normalisation des données.
+     * NETTOYAGE AUTOMATIQUE
      * Avant de sauvegarder, on transforme le code en MAJUSCULES
      * et on supprime les espaces inutiles.
-     * Ex: " sci fi " devient "SCI_FI" ou "SCIFI" selon votre logique.
+     * Ex: Transforme "sci fi" ou "Sci_Fi" en "SCI_FI" avant l'enregistrement.
      */
     @PrePersist
     @PreUpdate
     public void normalizeCode() {
         if (this.code != null) {
-            this.code = this.code.trim().toUpperCase();
+            // 1. On enlève les espaces autour
+            // 2. On remplace les espaces internes par des underscores
+            // 3. On met tout en majuscules
+            this.code = this.code.trim().replace(" ", "_").toUpperCase();
         }
     }
 }

@@ -2,6 +2,8 @@ package fr.bookHub.bo;
 
 import fr.bookHub.bo.enums.StatutReservation;
 import jakarta.persistence.*;
+import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.NotNull;
 import lombok.*;
 import java.io.Serializable;
 import java.time.LocalDateTime;
@@ -34,26 +36,31 @@ public class Reservation implements Serializable {
     @Column(name = "availability_date")
     private LocalDateTime dateDisponibilite;
 
-    // 3. Fin : Quand la réservation est terminée (Statut passe à ANNULEE ou TERMINEE)
-    // Utile pour l'historique et les statistiques
+    // 3. Fin : Quand la réservation est terminée (Statut passe à ANNULÉE ou TERMINÉE)
+    // Utile pour l'historique et les statistiques.
     @Column(name = "closing_date")
     private LocalDateTime dateCloture;
 
     @Enumerated(EnumType.STRING)
     @Column(name = "status", nullable = false, length = 20)
+    @NotNull(message = "Le statut de la réservation est obligatoire")
     private StatutReservation statut;
 
-    @Column(name = "priority_rank")
+    // Peut être null en base si le statut est ANNULÉE ou TERMINÉE
+    @Column(name = "priority_rank", nullable = true)
+    @Min(value = 1, message = "Le rang de priorité ne peut pas être inférieur à 1")
     private Integer rangPriorite;
 
     // --- RELATIONS ---
 
     @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "user_id", nullable = false)
+    @NotNull(message = "La réservation doit être liée à un utilisateur")
     private Utilisateur utilisateur;
 
     @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "book_id", nullable = false)
+    @NotNull(message = "La réservation doit concerner un livre")
     private Livre livre;
 
     @PrePersist
