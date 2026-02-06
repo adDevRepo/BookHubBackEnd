@@ -43,8 +43,9 @@ dependencies {
 	// Ajout pour la validation (@NotNull, @Size, @Email, etc.)
 	implementation 'org.springframework.boot:spring-boot-starter-validation'
 
-	// Pour simuler la BDD
-	testImplementation 'com.h2database:h2'
+    // h2
+    testImplementation 'com.h2database:h2'
+    testRuntimeOnly 'com.h2database:h2'
 }
 
 tasks.named('test') {
