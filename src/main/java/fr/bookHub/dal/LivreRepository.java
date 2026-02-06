@@ -19,7 +19,7 @@ public interface LivreRepository extends JpaRepository<Livre, Integer> {
     // Spring navigue dans la relation : Livre -> Categorie -> Id
     Page<Livre> findByCategorieId(Integer categoryId, Pageable pageable);
 
-    // RECHERCHE AVANCÉE (Optionnelle mais puissante)
+    // RECHERCHE AVANCÉE (Optionnelle, mais puissante)
     // Si l'utilisateur tape un mot clé, on cherche dans Titre OU Auteur OU ISBN
     @Query("SELECT l FROM Livre l WHERE " +
             "LOWER(l.titre) LIKE LOWER(CONCAT('%', :keyword, '%')) OR " +
