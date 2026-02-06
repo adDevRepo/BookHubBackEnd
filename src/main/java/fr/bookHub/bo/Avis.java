@@ -18,7 +18,9 @@ import java.time.LocalDateTime;
 @ToString
 
 @Entity
-@Table(name = "BOOKHUB_REVIEW")
+@Table(name = "BOOKHUB_REVIEW", uniqueConstraints = {
+        @UniqueConstraint(columnNames = {"user_id", "book_id"}) // contrainte d'une unicité en BDD pour assurer un seul avis/livre/utilisateur
+})
 public class Avis implements Serializable {
 
     private static final long serialVersionUID = 1L;
