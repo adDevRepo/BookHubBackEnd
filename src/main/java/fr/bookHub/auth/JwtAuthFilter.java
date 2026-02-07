@@ -1,9 +1,11 @@
 package fr.bookHub.auth;
 
+import io.jsonwebtoken.Claims;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import lombok.RequiredArgsConstructor;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
@@ -15,13 +17,10 @@ import java.io.IOException;
 import java.util.List;
 
 @Component
+@RequiredArgsConstructor
 public class JwtAuthFilter extends OncePerRequestFilter {
 
     private final JwtService jwtService;
-
-    public JwtAuthFilter(JwtService jwtService) {
-        this.jwtService = jwtService;
-    }
 
     @Override
     protected void doFilterInternal(
@@ -51,14 +50,28 @@ public class JwtAuthFilter extends OncePerRequestFilter {
         // Si pas déjà authentifié
         if (username != null && SecurityContextHolder.getContext().getAuthentication() == null) {
 
-            // autorités simples (demo)
-            var authorities = List.of(new SimpleGrantedAuthority("ROLE_USER"));
+            // 1. On extrait toutes les infos du token
+            Claims claims = jwtService.extractAllClaims(token);
+
+            // 2. On récupère le rôle (ex: "ADMIN")
+            String roleName = claims.get("role", String.class); // "role" est la clé qu'on a mise dans l'AuthController
+
+            // 3. On crée l'autorité Spring Security
+            // Convention Spring : ajouter le préfixe "ROLE_" devant
+            SimpleGrantedAuthority authority = new SimpleGrantedAuthority("ROLE_" + roleName);
 
             var authToken = new UsernamePasswordAuthenticationToken(
                     username,
                     null,
-                    authorities
+                    List.of(authority) // On donne la vraie autorité ici
             );
+
+            // Cela nous permettra ensuite de sécuriser les contrôleurs très facilement comme ceci :
+            /*
+                @PreAuthorize("hasRole('ADMIN')") // Marche car on a ajouté "ROLE_" + "ADMIN"
+                @DeleteMapping("/books/{id}")
+                public void deleteBook(...) { ... }
+            * */
 
             authToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
             SecurityContextHolder.getContext().setAuthentication(authToken);
