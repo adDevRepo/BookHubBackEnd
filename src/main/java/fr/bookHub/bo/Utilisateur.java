@@ -29,6 +29,7 @@ public class Utilisateur implements Serializable {
 
     @Column(name = "email", nullable = false, unique = true, length = 255)
     @NotBlank(message = "L'email ne peut pas être vide")
+    @Size(max = 255, message = "L'email est trop long")
     @Email(
             regexp = AppConstants.REGEX_EMAIL,
             message = "Format invalide (Caractères spéciaux interdits)"
@@ -60,7 +61,7 @@ public class Utilisateur implements Serializable {
 
     @Column(name = "phone_number", nullable = true, length = 10)
     @Pattern(
-            regexp = "^\\d{10}$",
+            regexp = AppConstants.REGEX_PHONE,
             message = "Le numéro doit contenir exactement 10 chiffres, sans espaces ni indicatif (Ex: 0612345678)"
     )
     private String numTelephone;
