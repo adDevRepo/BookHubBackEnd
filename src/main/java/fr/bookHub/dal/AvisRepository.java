@@ -34,5 +34,7 @@ public interface AvisRepository extends JpaRepository<Avis, Integer> {
      * Tous les avis d'un utilisateur
      */
     List<Avis> findByUtilisateurIdOrderByDatePublicationDesc(Integer utilisateurId);
+
+
 }
 
