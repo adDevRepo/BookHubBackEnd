@@ -1,6 +1,7 @@
 package fr.bookHub.bo;
 
 
+import fr.bookHub.util.AppConstants;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.*;
 import lombok.*;
@@ -29,7 +30,7 @@ public class Utilisateur implements Serializable {
     @Column(name = "email", nullable = false, unique = true, length = 255)
     @NotBlank(message = "L'email ne peut pas être vide")
     @Email(
-            regexp = "^[a-zA-Z0-9._-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$",
+            regexp = AppConstants.REGEX_EMAIL,
             message = "Format invalide (Caractères spéciaux interdits)"
     )
     private String email;
