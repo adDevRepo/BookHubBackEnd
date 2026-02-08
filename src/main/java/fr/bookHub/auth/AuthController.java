@@ -2,6 +2,8 @@ package fr.bookHub.auth;
 
 import fr.bookHub.bo.Utilisateur;
 import fr.bookHub.dal.UtilisateurRepository;
+import fr.bookHub.dto.LoginRequest;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -18,7 +20,7 @@ public class AuthController {
     private final PasswordEncoder passwordEncoder;
 
     @PostMapping("/login")
-    public ResponseEntity<?> login(@RequestBody LoginRequest req) {
+    public ResponseEntity<?> login(@RequestBody @Valid LoginRequest req) {
 
         // 1. On cherche l'utilisateur par son EMAIL (puisque LoginRequest.username recevra l'email)
         Utilisateur user = utilisateurRepository.findByEmail(req.username())
