@@ -3,6 +3,7 @@ package fr.bookHub.bll;
 import fr.bookHub.bo.*;
 import fr.bookHub.bo.enums.NomRole;
 import fr.bookHub.dal.*;
+import org.aspectj.bridge.IMessage;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -13,6 +14,7 @@ import java.util.List;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -35,7 +37,6 @@ class AvisServiceTest {
     @Test
     void saveAvisTest() {
 
-     // ajout des données
         Role role = Role.builder()
                 .nom(NomRole.READER)
                 .build();
@@ -72,17 +73,17 @@ class AvisServiceTest {
                 .build();
 
 
-        // ajout du comportement
+        // ARRANGE
         when(livreRepository.findById(1)).thenReturn(Optional.of(livre));
         when(utilisateurRepository.findById(2)).thenReturn(Optional.of(utilisateur));
         when(avisRepository.findByLivreIdAndUtilisateurId(1, 2)).thenReturn(Optional.empty());
         when(avisRepository.save(any(Avis.class))).thenReturn(avis);
 
-        // sauvegarde de l'avis
+        // ACT
         Avis avisResult =
                 avisService.saveOreUpdateAvis(1, 2, 4);
 
-        // test des données
+        // ASSERT
         assertThat(avisResult).isNotNull();
         assertThat(avisResult.getNote()).isEqualTo(4);
         assertThat(avisResult.getLivre().getId()).isEqualTo(1);
@@ -94,28 +95,44 @@ class AvisServiceTest {
     @Test
     void getAverageNoteByLivreTest() {
 
-        // ajout des données
+        // ARRANGE
         Integer livreId = 1;
         when(avisRepository.findAverageNoteByLivreId(livreId)).thenReturn(3.5);
 
-        // ajout du comportement
+        // ACT
         Double averageNote = avisService.getAverageNoteByLivre(livreId);
 
-        // test des données
+        // ASSERT
         assertThat(averageNote).isEqualTo(3.5);
         verify(avisRepository).findAverageNoteByLivreId(livreId);
     }
 
+
+
+    @Test
+    void saveAvisThrowsExceptionAvisAllReadyExist() {
+        when(livreRepository.findById(1)).thenReturn(Optional.of(new Livre()));
+        when(utilisateurRepository.findById(2)).thenReturn(Optional.of(new Utilisateur()));
+        when(avisRepository.findByLivreIdAndUtilisateurId(1, 2)).thenReturn(Optional.of(new Avis()));
+
+
+        assertThatThrownBy(() -> avisService.saveOreUpdateAvis(1, 2, 4))
+                .isInstanceOf(RuntimeException.class)
+                .hasMessageContaining("Un utilisateur ne peut poster qu’un seul avis par livre");
+    }
+
+
+
     @Test
     void countAvisByLivreTest() {
-        // ajout des données
+        // ARRANGE
         Integer livreId = 1;
         when(avisRepository.countByLivreId(livreId)).thenReturn(3L);
 
-        // ajout du comportement
+        // ACT
         long count = avisService.countAvisByLivre(livreId);
 
-        // test des données
+        // ASSERT
         assertThat(count).isEqualTo(3L);
         verify(avisRepository).countByLivreId(livreId);
     }
@@ -124,18 +141,19 @@ class AvisServiceTest {
     @Test
     void getAvisByUtilisateurTest() {
 
-        // ajout des données
+        // ARRANGE
         Integer utilisateurId = 5;
 
         Avis avis1 = Avis.builder().note(4).commentaire("Super film").build();
         Avis avis2 = Avis.builder().note(2).commentaire("Film moyen").build();
 
-        // ajout du comportement
+
         when(avisRepository.findByUtilisateurIdOrderByDatePublicationDesc(utilisateurId)).thenReturn(List.of(avis1, avis2));
 
+        // ACT
         List<Avis> listAvis = avisService.getAvisByUtilisateur(utilisateurId);
 
-        // test des données
+        // ASSERT
         assertThat(listAvis).isNotEmpty();
         assertThat(listAvis).hasSize(2);
         assertThat(listAvis.get(0).getNote()).isEqualTo(4);
@@ -148,18 +166,18 @@ class AvisServiceTest {
     @Test
     void getAvisByLivreTest() {
 
-        // ajout des données
+        // ARRANGE
         Integer livreId = 10;
 
         Avis avis1 = Avis.builder().note(5).commentaire("Super film").build();
         Avis avis2 = Avis.builder().note(1).commentaire("Film moyen").build();
 
-        // ajout du comportement
-        when(avisRepository.findByLivreIdOrderByDatePublicationDesc(livreId)).thenReturn(List.of(avis1, avis2));
 
+        when(avisRepository.findByLivreIdOrderByDatePublicationDesc(livreId)).thenReturn(List.of(avis1, avis2));
+        // ACT
         List<Avis> listAvis = avisService.getAvisByLivre(livreId);
 
-        // test des données
+        // ASSERT
         assertThat(listAvis).isNotEmpty();
         assertThat(listAvis).hasSize(2);
         assertThat(listAvis.get(0).getNote()).isEqualTo(5);

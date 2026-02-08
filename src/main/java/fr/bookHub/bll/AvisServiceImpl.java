@@ -13,7 +13,6 @@ import java.time.LocalDateTime;
 import java.util.List;
 
 @Service
-@Transactional
 public class AvisServiceImpl implements AvisService {
 
 
@@ -33,6 +32,7 @@ public class AvisServiceImpl implements AvisService {
 
 
     @Override
+    @Transactional
     public Avis saveOreUpdateAvis(Integer livreId, Integer utilisateurId, int note) {
         Livre livre = livreRepository.findById(livreId)
                 .orElseThrow(()-> new RuntimeException("Le livre n'existe pas"));

@@ -34,17 +34,26 @@ public class CategorieServiceTest {
 
     @Test
     void existsByCodeTest() {
+
+        // ARRANGE
         when(categorieRepository.existsByCodeIgnoreCase("polar")).thenReturn(true);
 
+        // ACT
         boolean exists = categorieService.existsByCodeIgnoreCase("polar");
+
+        // ASSERT
         assertThat(exists).isTrue();
     }
 
     @Test
     void existsByNameTest() {
+        // ARRANGE
         when(categorieRepository.existsByCodeIgnoreCase("Polar")).thenReturn(true);
 
+        // ACT
         boolean exists = categorieService.existsByCodeIgnoreCase("Polar");
+
+        // ASSERT
         assertThat(exists).isTrue();
     }
 
