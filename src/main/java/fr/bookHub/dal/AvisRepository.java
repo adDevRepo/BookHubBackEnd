@@ -35,6 +35,15 @@ public interface AvisRepository extends JpaRepository<Avis, Integer> {
      */
     List<Avis> findByUtilisateurIdOrderByDatePublicationDesc(Integer utilisateurId);
 
+    /**
+     * Suppression de l'avis par l'id du livre er de l'utilisateur
+     */
+    void deleteByLivreIdAndUtilisateurId(Integer livreId, Integer utilisateurId);
 
+
+    /**
+     * L'avis existe-t-il par l'id du livre de l'utilisateur
+     */
+    boolean existsByLivreIdAndUtilisateurId(Integer livreId, Integer utilisateurId);
 }
 

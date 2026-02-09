@@ -16,7 +16,7 @@ import java.util.List;
 public class AvisServiceImpl implements AvisService {
 
 
-   private final AvisRepository avisRepository;
+    private final AvisRepository avisRepository;
 
     private final UtilisateurRepository utilisateurRepository;
 
@@ -33,29 +33,50 @@ public class AvisServiceImpl implements AvisService {
 
     @Override
     @Transactional
-    public Avis saveOreUpdateAvis(Integer livreId, Integer utilisateurId, int note) {
+    public Avis saveAvis(Integer livreId, Integer utilisateurId, int note, String commentaire) {
+
         Livre livre = livreRepository.findById(livreId)
-                .orElseThrow(()-> new RuntimeException("Le livre n'existe pas"));
+                .orElseThrow(() -> new RuntimeException("Le livre n'existe pas" + "id : " + livreId));
+
         Utilisateur utilisateur = utilisateurRepository.findById(utilisateurId)
-       .orElseThrow(()-> new RuntimeException("L'utilisateur n'existe pas"));
+                .orElseThrow(() -> new RuntimeException("L'utilisateur n'existe pas"));
+
         if (avisRepository.findByLivreIdAndUtilisateurId(livreId, utilisateurId).isPresent()) {
             throw new RuntimeException("Un utilisateur ne peut poster qu’un seul avis par livre");
         }
-        return avisRepository
-                .findByLivreIdAndUtilisateurId(livreId, utilisateurId)
-                .map(existingAvis-> {
-                    existingAvis.setNote(note);
-                    existingAvis.setDatePublication(LocalDateTime.now());
-                    return avisRepository.save(existingAvis);
-                })
-                .orElseGet(()-> avisRepository.save(
-                        Avis.builder()
-                                .livre(livre)
-                                .utilisateur(utilisateur)
-                                .note(note)
-                                .datePublication(LocalDateTime.now())
-                                .build()
-                ));
+
+        return avisRepository.save(
+                Avis.builder()
+                        .livre(livre)
+                        .utilisateur(utilisateur)
+                        .note(note)
+                        .commentaire(commentaire)
+                        .datePublication(LocalDateTime.now())
+                        .build()
+        );
+    }
+
+
+
+    @Override
+    @Transactional
+    public Avis updateAvis(Integer avisId, int note, String commentaire) {
+        Avis avis = avisRepository.findById(avisId)
+                .orElseThrow(() -> new RuntimeException("Avis introuvable"));
+
+        avis.setNote(note);
+        avis.setCommentaire(commentaire);
+        avis.setDatePublication(LocalDateTime.now());
+        return avisRepository.save(avis);
+    }
+
+    @Override
+    @Transactional
+    public void deleteAvisById(Integer avisId) {
+        if (!avisRepository.existsById(avisId)) {
+            throw new RuntimeException("Avis introuvable");
+        }
+        avisRepository.deleteById(avisId);
     }
 
     @Override
@@ -77,4 +98,5 @@ public class AvisServiceImpl implements AvisService {
     public List<Avis> getAvisByLivre(Integer livreId) {
         return avisRepository.findByLivreIdOrderByDatePublicationDesc(livreId);
     }
+
 }

@@ -66,3 +66,20 @@ VALUES
 ('Astérix le Gaulois', 'Goscinny & Uderzo', '978-2012100010', 'Nous sommes en 50 avant Jésus-Christ...', 10, 10, 1, 3); -- BD
 
 GO
+
+
+-- ---------------------------------------------
+-- 5. INSERTION AVIS
+-- Pour avoir de la donnée à afficher
+-- ---------------------------------------------
+
+INSERT INTO dbo.bookhub_review (comment, posted_at, rating, book_id, user_id)
+VALUES
+    ('Super film du début à la fin', '20251025', 4.5, 2, 1),
+    ('Légère deception du jeu des acteurs', '20250912', 2.5, 1, 4),
+    ('Un grand classqiue du cinéma 🤩', '20251223', 5, 2, 4)
+
+GO
+
+
+
