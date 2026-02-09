@@ -76,7 +76,7 @@ public class AvisController {
      * Méthode Get, afficher avis par Id Utilisateur
      */
 
-    @GetMapping("/users/{id}/ratings")
+    @GetMapping("/me/{id}/ratings")
     public List<AvisDto.Response> getAvisByUtilisateur(@PathVariable Integer id) {
         return AvisDto.Response.fromEntityList(avisService.getAvisByUtilisateur(id));
     }
