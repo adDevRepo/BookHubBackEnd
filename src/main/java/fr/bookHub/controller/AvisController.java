@@ -57,7 +57,6 @@ public class AvisController {
     /**
      * Méthode Delete, suppression d'un avis (controle role bibliothécaire
      */
-
     @DeleteMapping("/ratings/{avisId}")
     @PreAuthorize("hasRole('LIBRARIAN')")
     public ResponseEntity<Void> deleteAvis(@PathVariable Integer avisId) {
@@ -68,7 +67,6 @@ public class AvisController {
     /**
      * Méthode Get, afficher avis par Id Livre
      */
-
     @GetMapping("/books/{id}/ratings")
     public List<AvisDto.Response> getAvisByLivre(@PathVariable Integer id) {
         return AvisDto.Response.fromEntityList(avisService.getAvisByLivre(id));

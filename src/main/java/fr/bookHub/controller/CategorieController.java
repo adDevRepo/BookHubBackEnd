@@ -46,6 +46,7 @@ public class CategorieController {
      */
 
     @PostMapping
+    @PreAuthorize("hasRole('LIBRARIAN')")
     public ResponseEntity<CategorieDto.Response> create(@Valid @RequestBody CategorieDto.Request dto) {
         Categorie saved = service.save(dto);
         return ResponseEntity.status(HttpStatus.CREATED)
