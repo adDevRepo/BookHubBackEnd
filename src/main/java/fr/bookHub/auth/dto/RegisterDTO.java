@@ -1,4 +1,4 @@
-package fr.bookHub.dto;
+package fr.bookHub.auth.dto;
 
 import fr.bookHub.bo.Utilisateur;
 import fr.bookHub.util.AppConstants;

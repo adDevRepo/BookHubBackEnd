@@ -1,4 +1,4 @@
-package fr.bookHub.auth;
+package fr.bookHub.auth.dto;
 
 import jakarta.validation.constraints.NotBlank;
 

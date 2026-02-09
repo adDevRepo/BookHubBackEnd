@@ -1,4 +1,4 @@
-package fr.bookHub.auth;
+package fr.bookHub.auth.dto;
 
 public record AuthResponse(
         String token,

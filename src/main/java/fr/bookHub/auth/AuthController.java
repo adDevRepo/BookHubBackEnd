@@ -1,9 +1,13 @@
 package fr.bookHub.auth;
 
+import fr.bookHub.auth.dto.AuthResponse;
+import fr.bookHub.auth.dto.LoginRequest;
+import fr.bookHub.auth.dto.RegisterDTO;
 import fr.bookHub.bll.UtilisateurService;
 import fr.bookHub.bo.Utilisateur;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
@@ -59,5 +63,33 @@ public class AuthController {
         );
 
         return ResponseEntity.ok(response);
+    }
+
+    @PostMapping("/register")
+    public ResponseEntity<AuthResponse> register(@RequestBody @Valid RegisterDTO registerDTO) {
+        // A. Création via le service
+        Utilisateur savedUser = utilisateurService.creerUtilisateur(registerDTO.toEntity());
+
+        // B. On génère direct le token (Auto-Login !)
+        AuthResponse response = generateResponse(savedUser);
+
+        return ResponseEntity.status(HttpStatus.CREATED).body(response);
+    }
+
+    // --- Méthode privée pour éviter de dupliquer la génération du token ---
+    private AuthResponse generateResponse(Utilisateur user) {
+        String roleName = user.getRole().getNom().name();
+        Map<String, Object> extraClaims = Map.of(
+                "id", user.getId(),
+                "role", roleName
+        );
+        String token = jwtService.generateToken(user.getEmail(), extraClaims);
+
+        return new AuthResponse(
+                token,
+                jwtService.getExpirationSeconds(),
+                user.getId(),
+                roleName
+        );
     }
 }
