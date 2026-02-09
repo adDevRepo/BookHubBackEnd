@@ -19,47 +19,57 @@ public class LivreController {
         this.livreService = livreService;
     }
 
-    // GET /api/livres?page=0&size=10&sort=titre,asc
     @GetMapping
     public Page<LivreDto> getAll(Pageable pageable) {
-        return livreService.consulterTous(pageable)
-                .map(LivreDto::fromEntity);
+        return livreService.consulterTous(pageable).map(LivreDto::fromEntity);
     }
 
-    // GET /api/livres/5
     @GetMapping("/{id}")
     public LivreDto getById(@PathVariable Integer id) {
         return LivreDto.fromEntity(livreService.consulterParId(id));
     }
 
-    // GET /api/livres/search?motCle=dune&page=0&size=10
     @GetMapping("/search")
     public Page<LivreDto> search(@RequestParam(required = false) String motCle, Pageable pageable) {
-        return livreService.rechercher(motCle, pageable)
-                .map(LivreDto::fromEntity);
+        return livreService.rechercher(motCle, pageable).map(LivreDto::fromEntity);
     }
 
-    // GET /api/livres/categorie/3?page=0&size=10
     @GetMapping("/categorie/{categorieId}")
     public Page<LivreDto> getByCategorie(@PathVariable Integer categorieId, Pageable pageable) {
-        return livreService.consulterParCategorie(categorieId, pageable)
-                .map(LivreDto::fromEntity);
+        return livreService.consulterParCategorie(categorieId, pageable).map(LivreDto::fromEntity);
     }
 
-    // POST /api/livres
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
-    public LivreDto create(@Valid @RequestBody Livre livre) {
+    public LivreDto create(@RequestBody LivreDto dto) {
+        if (dto == null) {
+            throw new IllegalArgumentException("Le livre est obligatoire.");
+        }
+        if (dto.categorieId() == null) {
+            throw new IllegalArgumentException("La catégorie est obligatoire.");
+        }
+
+        Livre livre = dto.toEntity();
+        livre.setId(null); // on force la création (pas d'id imposé par le front)
+
         return LivreDto.fromEntity(livreService.creerLivre(livre));
     }
 
-    // PUT /api/livres/5
     @PutMapping("/{id}")
-    public LivreDto update(@PathVariable Integer id, @Valid @RequestBody Livre livre) {
+    public LivreDto update(@PathVariable Integer id, @RequestBody LivreDto dto) {
+        if (dto == null) {
+            throw new IllegalArgumentException("Le livre est obligatoire.");
+        }
+        if (dto.categorieId() == null) {
+            throw new IllegalArgumentException("La catégorie est obligatoire.");
+        }
+
+        Livre livre = dto.toEntity();
+        livre.setId(id); // l'id du path fait foi
+
         return LivreDto.fromEntity(livreService.modifierLivre(id, livre));
     }
 
-    // DELETE /api/livres/5
     @DeleteMapping("/{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void delete(@PathVariable Integer id) {

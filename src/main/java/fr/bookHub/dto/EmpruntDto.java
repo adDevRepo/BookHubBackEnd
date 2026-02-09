@@ -24,11 +24,13 @@ public record EmpruntDto(
                 e.getDateEmprunt(),
                 e.getDateRetourPrevue(),
                 e.getDateRetourReel(),
-                e.getStatut().name(),
-                e.getUtilisateur().getId(),
-                e.getUtilisateur().getNom() + " " + e.getUtilisateur().getPrenom(),
-                e.getLivre().getId(),
-                e.getLivre().getTitre()
+                e.getStatut() != null ? e.getStatut().name() : null,
+                e.getUtilisateur() != null ? e.getUtilisateur().getId() : null,
+                e.getUtilisateur() != null
+                        ? e.getUtilisateur().getNom() + " " + e.getUtilisateur().getPrenom()
+                        : null,
+                e.getLivre() != null ? e.getLivre().getId() : null,
+                e.getLivre() != null ? e.getLivre().getTitre() : null
         );
     }
 }
