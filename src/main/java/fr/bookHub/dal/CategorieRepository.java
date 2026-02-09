@@ -8,7 +8,6 @@ import java.util.Optional;
 
 public interface CategorieRepository extends JpaRepository<Categorie, Integer> {
 
-
     /**
      * Vérifie si une catégorie existe déjà avec ce code
      * utilisé pour création et modification
@@ -31,5 +30,12 @@ public interface CategorieRepository extends JpaRepository<Categorie, Integer> {
      */
     List<Categorie> findAllByOrderByNomAsc();
 
-
+    /**
+     * Utilitaire : récupère une catégorie par ID ou lève une exception claire
+     */
+    default Categorie getOrThrow(Integer id) {
+        return findById(id).orElseThrow(() ->
+                new IllegalArgumentException("Catégorie introuvable : " + id)
+        );
+    }
 }

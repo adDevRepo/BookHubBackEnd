@@ -11,16 +11,19 @@ import java.util.List;
 
 public interface LivreRepository extends JpaRepository<Livre, Integer> {
 
-    // US-BOOK-03 : Recherche simple par Titre ou Auteur
-    // Ex: findByTitreContainingIgnoreCase("harry") -> Trouve "Harry Potter"
+    // ✅ Vérification unicité ISBN (création)
+    boolean existsByIsbn(String isbn);
+
+    // ✅ Vérification unicité ISBN (modification : exclut le livre courant)
+    boolean existsByIsbnAndIdNot(String isbn, Integer id);
+
+    // US-BOOK-03 : Recherche simple par Titre
     List<Livre> findByTitreContainingIgnoreCase(String titre);
 
     // US-BOOK-03 : Filtrer par catégorie
-    // Spring navigue dans la relation : Livre -> Categorie -> Id
     Page<Livre> findByCategorieId(Integer categoryId, Pageable pageable);
 
-    // RECHERCHE AVANCÉE (Optionnelle, mais puissante)
-    // Si l'utilisateur tape un mot clé, on cherche dans Titre OU Auteur OU ISBN
+    // Recherche avancée : Titre OU Auteur OU ISBN
     @Query("SELECT l FROM Livre l WHERE " +
             "LOWER(l.titre) LIKE LOWER(CONCAT('%', :keyword, '%')) OR " +
             "LOWER(l.auteur) LIKE LOWER(CONCAT('%', :keyword, '%')) OR " +
