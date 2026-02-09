@@ -14,15 +14,11 @@ logs/
 .settings/
 
 # Sensibles
-src/main/resources/application.properties
-src/main/resources/application.yml
 .env
 
 # OS
 .DS_Store
 Thumbs.db
-
-src/test/resources/application.properties
 
 # Wrapper
 !gradle/wrapper/gradle-wrapper.jar
