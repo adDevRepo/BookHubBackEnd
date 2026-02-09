@@ -41,10 +41,7 @@ public class LivreController {
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
-    public LivreDto create(@RequestBody LivreDto dto) {
-        if (dto == null) {
-            throw new IllegalArgumentException("Le livre est obligatoire.");
-        }
+    public LivreDto create(@Valid @RequestBody LivreDto dto) {
         if (dto.categorieId() == null) {
             throw new IllegalArgumentException("La catégorie est obligatoire.");
         }
@@ -56,10 +53,7 @@ public class LivreController {
     }
 
     @PutMapping("/{id}")
-    public LivreDto update(@PathVariable Integer id, @RequestBody LivreDto dto) {
-        if (dto == null) {
-            throw new IllegalArgumentException("Le livre est obligatoire.");
-        }
+    public LivreDto update(@PathVariable Integer id, @Valid @RequestBody LivreDto dto) {
         if (dto.categorieId() == null) {
             throw new IllegalArgumentException("La catégorie est obligatoire.");
         }
