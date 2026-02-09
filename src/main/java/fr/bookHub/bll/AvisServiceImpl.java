@@ -36,13 +36,13 @@ public class AvisServiceImpl implements AvisService {
     public Avis saveAvis(Integer livreId, Integer utilisateurId, int note, String commentaire) {
 
         Livre livre = livreRepository.findById(livreId)
-                .orElseThrow(() -> new RuntimeException("Le livre n'existe pas" + "id : " + livreId));
+                .orElseThrow(() -> new IllegalArgumentException("Le livre n'existe pas"));
 
         Utilisateur utilisateur = utilisateurRepository.findById(utilisateurId)
-                .orElseThrow(() -> new RuntimeException("L'utilisateur n'existe pas"));
+                .orElseThrow(() -> new IllegalArgumentException("L'utilisateur n'existe pas"));
 
         if (avisRepository.findByLivreIdAndUtilisateurId(livreId, utilisateurId).isPresent()) {
-            throw new RuntimeException("Un utilisateur ne peut poster qu’un seul avis par livre");
+            throw new IllegalArgumentException("Un utilisateur ne peut poster qu’un seul avis par livre");
         }
 
         return avisRepository.save(
@@ -62,7 +62,7 @@ public class AvisServiceImpl implements AvisService {
     @Transactional
     public Avis updateAvis(Integer avisId, int note, String commentaire) {
         Avis avis = avisRepository.findById(avisId)
-                .orElseThrow(() -> new RuntimeException("Avis introuvable"));
+                .orElseThrow(() -> new IllegalArgumentException("Avis introuvable"));
 
         avis.setNote(note);
         avis.setCommentaire(commentaire);
@@ -74,7 +74,7 @@ public class AvisServiceImpl implements AvisService {
     @Transactional
     public void deleteAvisById(Integer avisId) {
         if (!avisRepository.existsById(avisId)) {
-            throw new RuntimeException("Avis introuvable");
+            throw new IllegalArgumentException("Avis introuvable");
         }
         avisRepository.deleteById(avisId);
     }
