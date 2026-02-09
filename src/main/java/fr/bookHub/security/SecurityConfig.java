@@ -1,7 +1,7 @@
 package fr.bookHub.security;
 
 import fr.bookHub.auth.JwtAuthFilter;
-import fr.bookHub.dal.UtilisateurRepository; // ✅ Import nécessaire
+import fr.bookHub.dal.UtilisateurRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -36,16 +36,16 @@ public class SecurityConfig {
         http
                 .csrf(AbstractHttpConfigurer::disable)
                 .authorizeHttpRequests(auth ->
-                    auth
-                        // Tout ce qui est AUTH (Login + Register) est PUBLIC
-                        .requestMatchers("/api/auth/**").permitAll()
+                        auth
+                                // Tout ce qui est AUTH (Login + Register) est PUBLIC
+                                .requestMatchers("/api/auth/**").permitAll()
 
-                        // Autoriser Swagger si besoin
-                        //.requestMatchers("/v3/api-docs/**", "/swagger-ui/**").permitAll()
+                                // Autoriser Swagger si besoin
+                                //.requestMatchers("/v3/api-docs/**", "/swagger-ui/**").permitAll()
 
-                        // TOUT LE RESTE nécessite juste d'être CONNECTÉ
-                        // On ne gère pas les rôles ici, on le fera dans les contrôleurs !
-                        .anyRequest().authenticated()
+                                // TOUT LE RESTE nécessite juste d'être CONNECTÉ
+                                // On ne gère pas les rôles ici, on le fera dans les contrôleurs !
+                                .anyRequest().authenticated()
                 )
                 .sessionManagement(sess -> sess.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authenticationProvider(authenticationProvider())
