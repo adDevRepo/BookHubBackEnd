@@ -81,7 +81,7 @@ class AvisServiceTest {
 
         // ACT
         Avis avisResult =
-                avisService.saveOreUpdateAvis(1, 2, 4);
+                avisService.saveAvis(1, 2, 4, "Super");
 
         // ASSERT
         assertThat(avisResult).isNotNull();
@@ -116,7 +116,7 @@ class AvisServiceTest {
         when(avisRepository.findByLivreIdAndUtilisateurId(1, 2)).thenReturn(Optional.of(new Avis()));
 
 
-        assertThatThrownBy(() -> avisService.saveOreUpdateAvis(1, 2, 4))
+        assertThatThrownBy(() -> avisService.saveAvis(1, 2, 4, "Top"))
                 .isInstanceOf(RuntimeException.class)
                 .hasMessageContaining("Un utilisateur ne peut poster qu’un seul avis par livre");
     }

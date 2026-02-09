@@ -1,6 +1,7 @@
 package fr.bookHub.bll;
 
 import fr.bookHub.bo.Categorie;
+import fr.bookHub.dto.CategorieDto;
 
 import java.util.List;
 import java.util.Optional;
@@ -30,5 +31,14 @@ public interface CategorieService {
      * utilisé pour création et modification
      */
     boolean existsByCodeIgnoreCase(String code);
+
+
+    Categorie save(CategorieDto.Request dto);
+
+    Optional<Categorie> findById(Integer id);
+
+    Categorie update(Integer id, CategorieDto.Update dto);
+
+    void deleteById(Integer id);
 
 }
