@@ -1,4 +1,4 @@
-package fr.bookHub.rest;
+package fr.bookHub.controller;
 
 import fr.bookHub.bll.UtilisateurService;
 import fr.bookHub.bo.Utilisateur;
