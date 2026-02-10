@@ -3,7 +3,9 @@ package fr.bookHub.bll;
 import fr.bookHub.bo.Reservation;
 import fr.bookHub.bo.Utilisateur;
 import fr.bookHub.bo.Livre;
+import fr.bookHub.bo.enums.StatutEmprunt;
 import fr.bookHub.bo.enums.StatutReservation;
+import fr.bookHub.dal.EmpruntRepository;
 import fr.bookHub.dal.LivreRepository;
 import fr.bookHub.dal.ReservationRepository;
 import fr.bookHub.dal.UtilisateurRepository;
@@ -28,20 +30,39 @@ public class ReservationServiceImpl implements ReservationService {
     private final ReservationRepository reservationRepository;
     private final UtilisateurRepository utilisateurRepository;
     private final LivreRepository livreRepository;
+    private final EmpruntRepository empruntRepository;
+
 
     @Override
     public Reservation creerReservation(Integer userId, Integer livreId) {
-        // 1. Vérifications préalables
+        // 1. Vérifications préalables (User et Livre existent)
         Utilisateur utilisateur = getUtilisateurOrThrow(userId);
         Livre livre = getLivreOrThrow(livreId);
 
-        // 2. Règle métier : Interdire les doublons (En attente ou Disponible)
+        // --- NOUVELLES RÈGLES MÉTIER ---
+
+        // Règle A : On ne réserve pas un livre qui est disponible en rayon
+        if (livre.getExemplairesDispo() > 0) {
+            throw new IllegalStateException("Le livre est disponible en rayon. Vous pouvez l'emprunter directement.");
+        }
+
+        // Règle B : On ne réserve pas un livre qu'on a déjà emprunté (En cours ou En retard)
+        boolean aDejaLeLivre = empruntRepository.existsByUtilisateurIdAndLivreIdAndStatutIn(
+                userId,
+                livreId,
+                List.of(StatutEmprunt.EN_COURS, StatutEmprunt.EN_RETARD)
+        );
+        if (aDejaLeLivre) {
+            throw new IllegalStateException("Vous empruntez déjà ce livre actuellement.");
+        }
+
+        // -------------------------------
+
+        // 2. Règle doublon réservation
         verifierPasDeDoublon(userId, livreId);
 
-        // 3. Calcul du rang
         long nbEnAttente = reservationRepository.countByLivreIdAndStatut(livreId, StatutReservation.EN_ATTENTE);
 
-        // 4. Création
         Reservation reservation = Reservation.builder()
                 .utilisateur(utilisateur)
                 .livre(livre)
@@ -50,7 +71,7 @@ public class ReservationServiceImpl implements ReservationService {
                 .rangPriorite((int) nbEnAttente + 1)
                 .build();
 
-        log.info("Réservation créée pour User {} sur Livre {} (Rang {})", userId, livreId, reservation.getRangPriorite());
+        log.info("Réservation créée...");
         return reservationRepository.save(reservation);
     }
 

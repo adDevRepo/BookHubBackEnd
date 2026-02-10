@@ -21,21 +21,18 @@ public interface EmpruntService {
      */
     Emprunt retournerLivre(Integer empruntId);
 
-    /**
-     * Liste tous les emprunts EN COURS d'un utilisateur.
-     * (Ceux qui n'ont pas encore été rendus).
-     */
-    List<Emprunt> consulterEmpruntsEnCours(Integer utilisateurId);
+    // Historique complet (fermés + en cours)
+    List<Emprunt> getEmpruntsUtilisateur(Integer utilisateurId);
+
+    // Seulement ceux en cours
+    List<Emprunt> getEmpruntsEnCours(Integer utilisateurId);
+
+    // Liste globale des retards (pour l'admin/bibliothécaire)
+    List<Emprunt> getEmpruntsEnRetard();
 
     /**
-     * Historique complet des emprunts d'un utilisateur (Passés et présents).
+     * Récupère uniquement les emprunts terminés (Statut RETOURNE).
+     * C'est l'historique passif.
      */
-    List<Emprunt> consulterHistoriqueUtilisateur(Integer utilisateurId);
-
-    /**
-     * Récupère tous les emprunts actuellement en retard.
-     * (Date de retour prévue < Date du jour ET Date retour effective est null).
-     * Utile pour les bibliothécaires.
-     */
-    List<Emprunt> consulterEmpruntsEnRetard();
+    List<Emprunt> getEmpruntsTermines(Integer utilisateurId);
 }
