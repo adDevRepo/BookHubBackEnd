@@ -5,7 +5,6 @@ import fr.bookHub.bll.UtilisateurService;
 import fr.bookHub.bo.Reservation;
 import fr.bookHub.bo.Utilisateur;
 import fr.bookHub.dto.ReservationDTO;
-import fr.bookHub.dto.ReservationRequest;
 import jakarta.persistence.EntityNotFoundException;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -34,11 +33,11 @@ public class ReservationController {
      * POST /api/reservations
      */
     @PostMapping
-    public ResponseEntity<ReservationDTO> creerReservation(@RequestBody @Valid ReservationRequest request) {
+    public ResponseEntity<ReservationDTO.Respoonse> creerReservation(@RequestBody @Valid ReservationDTO.Request request) {
         Utilisateur currentUser = getUtilisateurConnecte();
         try {
             Reservation r = reservationService.creerReservation(currentUser.getId(), request.livreId());
-            return ResponseEntity.status(HttpStatus.CREATED).body(ReservationDTO.fromEntity(r));
+            return ResponseEntity.status(HttpStatus.CREATED).body(ReservationDTO.Respoonse.fromEntity(r));
         } catch (EntityNotFoundException e) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, e.getMessage());
         } catch (IllegalStateException e) {
@@ -51,11 +50,11 @@ public class ReservationController {
      * GET /api/reservations/me
      */
     @GetMapping("/me")
-    public ResponseEntity<List<ReservationDTO>> getMesReservations() {
+    public ResponseEntity<List<ReservationDTO.Respoonse>> getMesReservations() {
         Utilisateur currentUser = getUtilisateurConnecte();
         return ResponseEntity.ok(
                 reservationService.getReservationsUtilisateur(currentUser.getId())
-                        .stream().map(ReservationDTO::fromEntity).toList()
+                        .stream().map(ReservationDTO.Respoonse::fromEntity).toList()
         );
     }
 
@@ -64,12 +63,12 @@ public class ReservationController {
      * PATCH /api/reservations/{id}/cancel
      */
     @PatchMapping("/{id}/cancel")
-    public ResponseEntity<ReservationDTO> annulerMaReservation(@PathVariable Integer id) {
+    public ResponseEntity<ReservationDTO.Respoonse> annulerMaReservation(@PathVariable Integer id) {
         Utilisateur currentUser = getUtilisateurConnecte();
         try {
             // Note: Le service vérifie déjà que c'est bien MA réservation
             Reservation r = reservationService.annulerReservation(id, currentUser.getId());
-            return ResponseEntity.ok(ReservationDTO.fromEntity(r));
+            return ResponseEntity.ok(ReservationDTO.Respoonse.fromEntity(r));
         } catch (IllegalStateException e) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, e.getMessage());
         }
@@ -121,11 +120,11 @@ public class ReservationController {
      */
     @PreAuthorize("hasRole('ADMIN')") // SÉCURITÉ ADMIN
     @GetMapping("/book/{livreId}")
-    public ResponseEntity<List<ReservationDTO>> getFileAttente(@PathVariable Integer livreId) {
+    public ResponseEntity<List<ReservationDTO.Respoonse>> getFileAttente(@PathVariable Integer livreId) {
         List<Reservation> list = reservationService.getFileAttenteLivre(livreId);
 
         return ResponseEntity.ok(list.stream()
-                .map(ReservationDTO::fromEntity)
+                .map(ReservationDTO.Respoonse::fromEntity)
                 .toList());
     }
 
