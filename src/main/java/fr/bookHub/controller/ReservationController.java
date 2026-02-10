@@ -33,11 +33,11 @@ public class ReservationController {
      * POST /api/reservations
      */
     @PostMapping
-    public ResponseEntity<ReservationDTO.Respoonse> creerReservation(@RequestBody @Valid ReservationDTO.Request request) {
+    public ResponseEntity<ReservationDTO.Response> creerReservation(@RequestBody @Valid ReservationDTO.Request request) {
         Utilisateur currentUser = getUtilisateurConnecte();
         try {
             Reservation r = reservationService.creerReservation(currentUser.getId(), request.livreId());
-            return ResponseEntity.status(HttpStatus.CREATED).body(ReservationDTO.Respoonse.fromEntity(r));
+            return ResponseEntity.status(HttpStatus.CREATED).body(ReservationDTO.Response.fromEntity(r));
         } catch (EntityNotFoundException e) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, e.getMessage());
         } catch (IllegalStateException e) {
@@ -50,11 +50,11 @@ public class ReservationController {
      * GET /api/reservations/me
      */
     @GetMapping("/me")
-    public ResponseEntity<List<ReservationDTO.Respoonse>> getMesReservations() {
+    public ResponseEntity<List<ReservationDTO.Response>> getMesReservations() {
         Utilisateur currentUser = getUtilisateurConnecte();
         return ResponseEntity.ok(
                 reservationService.getReservationsUtilisateur(currentUser.getId())
-                        .stream().map(ReservationDTO.Respoonse::fromEntity).toList()
+                        .stream().map(ReservationDTO.Response::fromEntity).toList()
         );
     }
 
@@ -63,12 +63,12 @@ public class ReservationController {
      * PATCH /api/reservations/{id}/cancel
      */
     @PatchMapping("/{id}/cancel")
-    public ResponseEntity<ReservationDTO.Respoonse> annulerMaReservation(@PathVariable Integer id) {
+    public ResponseEntity<ReservationDTO.Response> annulerMaReservation(@PathVariable Integer id) {
         Utilisateur currentUser = getUtilisateurConnecte();
         try {
             // Note: Le service vérifie déjà que c'est bien MA réservation
             Reservation r = reservationService.annulerReservation(id, currentUser.getId());
-            return ResponseEntity.ok(ReservationDTO.Respoonse.fromEntity(r));
+            return ResponseEntity.ok(ReservationDTO.Response.fromEntity(r));
         } catch (IllegalStateException e) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, e.getMessage());
         }
@@ -120,11 +120,11 @@ public class ReservationController {
      */
     @PreAuthorize("hasRole('ADMIN')") // SÉCURITÉ ADMIN
     @GetMapping("/book/{livreId}")
-    public ResponseEntity<List<ReservationDTO.Respoonse>> getFileAttente(@PathVariable Integer livreId) {
+    public ResponseEntity<List<ReservationDTO.Response>> getFileAttente(@PathVariable Integer livreId) {
         List<Reservation> list = reservationService.getFileAttenteLivre(livreId);
 
         return ResponseEntity.ok(list.stream()
-                .map(ReservationDTO.Respoonse::fromEntity)
+                .map(ReservationDTO.Response::fromEntity)
                 .toList());
     }
 

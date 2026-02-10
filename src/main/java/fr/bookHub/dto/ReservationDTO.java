@@ -7,7 +7,7 @@ import java.time.LocalDateTime;
 
 public class ReservationDTO {
 
-    public record Respoonse(
+    public record Response(
         Integer id,
         String statut,         // Ex: "EN_ATTENTE"
         Integer rangPriorite,  // Ex: 1, 2... ou null
@@ -23,10 +23,10 @@ public class ReservationDTO {
         Integer utilisateurId,
         String utilisateurNomComplet
     ) {
-        public static Respoonse fromEntity(Reservation r) {
+        public static Response fromEntity(Reservation r) {
             if (r == null) return null;
 
-            return new Respoonse(
+            return new Response(
                     r.getId(),
                     r.getStatut().name(),
                     r.getRangPriorite(),
