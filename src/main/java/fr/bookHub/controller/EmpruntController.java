@@ -11,7 +11,7 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
 @RestController
-@RequestMapping("/api/emprunts")
+@RequestMapping("/api/loans")
 public class EmpruntController {
 
     private final EmpruntService empruntService;
@@ -22,7 +22,7 @@ public class EmpruntController {
 
     /**
      * ✅ Créer un emprunt
-     * POST /api/emprunts
+     * POST /api/loans
      * Body: { "utilisateurId": 1, "livreId": 5 }
      */
     @PostMapping
@@ -34,10 +34,10 @@ public class EmpruntController {
 
     /**
      * ✅ Retourner un emprunt
-     * POST /api/emprunts/{empruntId}/retour
+     * POST /api/loans/{empruntId}/return
      */
     @PreAuthorize("hasAnyRole('LIBRARIAN','ADMIN')")
-    @PostMapping("/{empruntId}/retour")
+    @PostMapping("/{empruntId}/return")
     public EmpruntDto retourner(@PathVariable Integer empruntId) {
         Emprunt emprunt = empruntService.retournerLivre(empruntId);
         return EmpruntDto.fromEntity(emprunt);
@@ -45,9 +45,9 @@ public class EmpruntController {
 
     /**
      * ✅ Emprunts EN COURS d’un utilisateur
-     * GET /api/emprunts/utilisateur/{utilisateurId}/en-cours
+     * GET /api/loans/{utilisateurId}/ongoing
      */
-    @GetMapping("/utilisateur/{utilisateurId}/en-cours")
+    @GetMapping("/{utilisateurId}/ongoing")
     public List<EmpruntDto> empruntsEnCours(@PathVariable Integer utilisateurId) {
         return empruntService.consulterEmpruntsEnCours(utilisateurId)
                 .stream()
@@ -57,10 +57,10 @@ public class EmpruntController {
 
     /**
      * ✅ Historique complet d’un utilisateur
-     * GET /api/emprunts/utilisateur/{utilisateurId}/historique
+     * GET /api/loans/{utilisateurId}/history
      */
 
-    @GetMapping("/utilisateur/{utilisateurId}/historique")
+    @GetMapping("/{utilisateurId}/history")
     public List<EmpruntDto> historique(@PathVariable Integer utilisateurId) {
         return empruntService.consulterHistoriqueUtilisateur(utilisateurId)
                 .stream()
@@ -70,10 +70,11 @@ public class EmpruntController {
 
     /**
      * ✅ Tous les emprunts en retard (bibliothécaire)
-     * GET /api/emprunts/en-retard
+     * GET /api/loans/overdue
      */
 
-    @GetMapping("/en-retard")
+    @GetMapping("/overdue")
+    @PreAuthorize("hasAnyRole('LIBRARIAN','ADMIN')")
     public List<EmpruntDto> enRetard() {
         return empruntService.consulterEmpruntsEnRetard()
                 .stream()
