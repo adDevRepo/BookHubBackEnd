@@ -1,13 +1,16 @@
 package fr.bookHub.bll;
 
-import fr.bookHub.bll.EmpruntService;
 import fr.bookHub.bo.Emprunt;
 import fr.bookHub.bo.Livre;
+import fr.bookHub.bo.Reservation;
 import fr.bookHub.bo.Utilisateur;
 import fr.bookHub.bo.enums.StatutEmprunt;
 import fr.bookHub.dal.EmpruntRepository;
 import fr.bookHub.dal.LivreRepository;
 import fr.bookHub.dal.UtilisateurRepository;
+import jakarta.persistence.EntityNotFoundException;
+import lombok.RequiredArgsConstructor;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -16,133 +19,128 @@ import java.util.List;
 
 @Service
 @Transactional
+@RequiredArgsConstructor // Remplace le constructeur manuel (Lombok)
 public class EmpruntServiceImpl implements EmpruntService {
 
-    private static final int MAX_EMPRUNTS_EN_COURS = 3;
+    private static final int MAX_EMPRUNTS_SIMULTANES = 3;
     private static final int DUREE_EMPRUNT_JOURS = 14;
 
     private final EmpruntRepository empruntRepository;
     private final UtilisateurRepository utilisateurRepository;
     private final LivreRepository livreRepository;
 
-    public EmpruntServiceImpl(EmpruntRepository empruntRepository,
-                              UtilisateurRepository utilisateurRepository,
-                              LivreRepository livreRepository) {
-        this.empruntRepository = empruntRepository;
-        this.utilisateurRepository = utilisateurRepository;
-        this.livreRepository = livreRepository;
-    }
+    @Lazy
+    private final ReservationService reservationService;
 
     @Override
     public Emprunt emprunterLivre(Integer utilisateurId, Integer livreId) {
-        if (utilisateurId == null || livreId == null) {
-            throw new IllegalArgumentException("utilisateurId et livreId sont obligatoires.");
-        }
-
+        // 1. Chargement des entités
         Utilisateur utilisateur = utilisateurRepository.findById(utilisateurId)
-                .orElseThrow(() -> new IllegalArgumentException("Utilisateur introuvable : " + utilisateurId));
+                .orElseThrow(() -> new EntityNotFoundException("Utilisateur introuvable : " + utilisateurId));
 
         Livre livre = livreRepository.findById(livreId)
-                .orElseThrow(() -> new IllegalArgumentException("Livre introuvable : " + livreId));
+                .orElseThrow(() -> new EntityNotFoundException("Livre introuvable : " + livreId));
 
-        // Bloquant : retards existants
-        if (empruntRepository.existsByUtilisateurIdAndStatut(utilisateurId, StatutEmprunt.EN_RETARD)) {
-            throw new IllegalStateException("Emprunt refusé : l'utilisateur a au moins un emprunt en retard.");
+        // 2. Vérification Bloquante : Aucun retard autorisé
+        boolean aDesRetards = empruntRepository.existsByUtilisateurIdAndStatut(utilisateurId, StatutEmprunt.EN_RETARD);
+        if (aDesRetards) {
+            throw new IllegalStateException("Impossible d'emprunter : Vous avez des livres en retard.");
         }
 
-        // Quota max (EN_COURS)
-        long nbEnCours = empruntRepository.countByUtilisateurIdAndStatut(utilisateurId, StatutEmprunt.EN_COURS);
-        if (nbEnCours >= MAX_EMPRUNTS_EN_COURS) {
-            throw new IllegalStateException("Emprunt refusé : quota maximum atteint (" + MAX_EMPRUNTS_EN_COURS + ").");
+        // 3. Vérification Quota : On compte EN_COURS et EN_RETARD (tout ce qui est chez lui)
+        long nbActuels = empruntRepository.countEmpruntsActifs(
+                utilisateurId,
+                List.of(StatutEmprunt.EN_COURS, StatutEmprunt.EN_RETARD)
+        );
+
+        if (nbActuels >= MAX_EMPRUNTS_SIMULTANES) {
+            throw new IllegalStateException("Quota atteint : Vous avez déjà " + nbActuels + " livres en votre possession.");
         }
 
-        // Stock
-        Integer dispo = livre.getExemplairesDispo();
-        if (dispo == null || dispo <= 0) {
-            throw new IllegalStateException("Emprunt refusé : aucune copie disponible.");
+        // 4. Vérification Stock
+        if (livre.getExemplairesDispo() <= 0) {
+            throw new IllegalStateException("Livre indisponible (Stock épuisé).");
         }
 
-        // Créer l'emprunt
-        LocalDate today = LocalDate.now();
-
+        // 5. Création de l'emprunt
         Emprunt emprunt = Emprunt.builder()
                 .utilisateur(utilisateur)
                 .livre(livre)
-                .dateEmprunt(today) // (ton @PrePersist le ferait aussi)
-                .dateRetourPrevue(today.plusDays(DUREE_EMPRUNT_JOURS))
-                .dateRetourReel(null)
+                .dateEmprunt(LocalDate.now())
+                .dateRetourPrevue(LocalDate.now().plusDays(DUREE_EMPRUNT_JOURS))
                 .statut(StatutEmprunt.EN_COURS)
                 .build();
 
-        // Décrémenter stock
-        livre.setExemplairesDispo(dispo - 1);
-        livreRepository.save(livre);
+        // 6. Mise à jour du stock
+        livre.setExemplairesDispo(livre.getExemplairesDispo() - 1);
+        livreRepository.save(livre); // Optionnel si transactionnel, mais explicite c'est bien
 
         return empruntRepository.save(emprunt);
     }
 
     @Override
     public Emprunt retournerLivre(Integer empruntId) {
-        if (empruntId == null) {
-            throw new IllegalArgumentException("empruntId est obligatoire.");
-        }
-
         Emprunt emprunt = empruntRepository.findById(empruntId)
-                .orElseThrow(() -> new IllegalArgumentException("Emprunt introuvable : " + empruntId));
+                .orElseThrow(() -> new EntityNotFoundException("Emprunt introuvable : " + empruntId));
 
-        if (emprunt.getDateRetourReel() != null || emprunt.getStatut() == StatutEmprunt.RETOURNE) {
-            throw new IllegalStateException("Cet emprunt est déjà retourné.");
+        if (emprunt.getStatut() == StatutEmprunt.RETOURNE || emprunt.getDateRetourReel() != null) {
+            throw new IllegalStateException("Ce livre est déjà retourné.");
         }
 
-        // Mettre à jour emprunt
+        // 1. Clôture de l'emprunt
         emprunt.setDateRetourReel(LocalDate.now());
         emprunt.setStatut(StatutEmprunt.RETOURNE);
 
-        // Libérer stock
-        Livre livre = emprunt.getLivre();
-        Integer dispo = livre.getExemplairesDispo();
-        livre.setExemplairesDispo((dispo == null ? 0 : dispo) + 1);
-        livreRepository.save(livre);
+        // Sauvegarde intermédiaire de l'emprunt
+        empruntRepository.save(emprunt);
 
-        return empruntRepository.save(emprunt);
+        Livre livre = emprunt.getLivre();
+
+        // 2. Vérification des réservations
+        // On demande au service de réservation : "Y a-t-il quelqu'un qui attend ce livre ?"
+        Reservation reservationActivee = reservationService.notifierRetourLivre(livre.getId());
+
+        if (reservationActivee != null) {
+            // CAS A : Quelqu'un attendait le livre.
+            // On NE remet PAS le livre en stock général.
+            // Le livre est maintenant "réservé" (logiquement bloqué).
+            // Le stock reste à 0 (ou sa valeur actuelle) pour empêcher un emprunt "sauvage".
+            System.out.println("Livre mis de côté pour la réservation ID: " + reservationActivee.getId());
+        } else {
+            // CAS B : Personne n'attend.
+            // On remet le livre en rayon.
+            livre.setExemplairesDispo(livre.getExemplairesDispo() + 1);
+            livreRepository.save(livre);
+        }
+
+        return emprunt;
     }
 
     @Override
     @Transactional(readOnly = true)
-    public List<Emprunt> consulterEmpruntsEnCours(Integer utilisateurId) {
-        if (utilisateurId == null) {
-            throw new IllegalArgumentException("utilisateurId est obligatoire.");
-        }
-
+    public List<Emprunt> getEmpruntsUtilisateur(Integer utilisateurId) {
+        // Vérifier existence user seulement si nécessaire, sinon le repo renvoie liste vide
         if (!utilisateurRepository.existsById(utilisateurId)) {
-            throw new IllegalArgumentException("Utilisateur introuvable : " + utilisateurId);
+            throw new EntityNotFoundException("Utilisateur introuvable");
         }
+        return empruntRepository.findByUtilisateurId(utilisateurId);
+    }
 
+    @Override
+    @Transactional(readOnly = true)
+    public List<Emprunt> getEmpruntsEnCours(Integer utilisateurId) {
         return empruntRepository.findByUtilisateurIdAndStatut(utilisateurId, StatutEmprunt.EN_COURS);
     }
 
     @Override
     @Transactional(readOnly = true)
-    public List<Emprunt> consulterHistoriqueUtilisateur(Integer utilisateurId) {
-        if (utilisateurId == null) {
-            throw new IllegalArgumentException("utilisateurId est obligatoire.");
-        }
-
-        Utilisateur utilisateur = utilisateurRepository.findById(utilisateurId)
-                .orElseThrow(() -> new IllegalArgumentException("Utilisateur introuvable : " + utilisateurId));
-
-        return empruntRepository.findByUtilisateur(utilisateur);
+    public List<Emprunt> getEmpruntsTermines(Integer utilisateurId) {
+        return empruntRepository.findByUtilisateurIdAndStatut(utilisateurId, StatutEmprunt.RETOURNE);
     }
 
     @Override
     @Transactional(readOnly = true)
-    public List<Emprunt> consulterEmpruntsEnRetard() {
-        // Option B : calcul en mémoire (pas besoin de méthode repo en plus)
-        LocalDate today = LocalDate.now();
-
-        return empruntRepository.findAll().stream()
-                .filter(e -> e.getDateRetourReel() == null)
-                .filter(e -> e.getDateRetourPrevue() != null && e.getDateRetourPrevue().isBefore(today))
-                .toList();
+    public List<Emprunt> getEmpruntsEnRetard() {
+        return empruntRepository.findEmpruntsEnRetard(LocalDate.now());
     }
 }

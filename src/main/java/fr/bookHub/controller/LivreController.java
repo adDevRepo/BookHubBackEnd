@@ -11,7 +11,7 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
-@RequestMapping("/api/livres")
+@RequestMapping("/api/books")
 public class LivreController {
 
     private final LivreService livreService;
@@ -39,7 +39,7 @@ public class LivreController {
     }
 
 
-    @GetMapping("/categorie/{categorieId}")
+    @GetMapping("/categories/{categorieId}")
     public Page<LivreDto> getByCategorie(@PathVariable Integer categorieId, Pageable pageable) {
         return livreService.consulterParCategorie(categorieId, pageable).map(LivreDto::fromEntity);
     }
