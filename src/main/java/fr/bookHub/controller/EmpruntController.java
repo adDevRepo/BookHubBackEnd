@@ -26,18 +26,12 @@ public class EmpruntController {
     private final EmpruntService empruntService;
     private final UtilisateurService utilisateurService;
 
-    /**
-     * 1. CRÉER UN EMPRUNT (Action Bibliothécaire)
-     * POST /api/loans
-     * Accès : ADMIN ou LIBRARIAN
-     */
+
     /**
      * 1. CRÉER UN EMPRUNT (Self-service ou Bibliothécaire)
      * POST /api/loans
      * Accès : Tout utilisateur connecté (READER, ADMIN, LIBRARIAN)
      */
-    // On enlève le @PreAuthorize restrictif pour laisser passer les READER
-    // (L'accès reste protégé par SecurityConfig .anyRequest().authenticated())
     @PostMapping
     public ResponseEntity<EmpruntDto.Response> emprunter(@Valid @RequestBody EmpruntDto.Request request) {
         try {
