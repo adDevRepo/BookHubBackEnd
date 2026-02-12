@@ -24,6 +24,12 @@ public interface LivreService {
     Livre consulterParId(Integer id);
 
     /**
+     * Liste tous les livres actifs avec pagination.
+     * Exemple : page 1, taille 20, trié par titre.
+     */
+    Page<Livre> consulterTousActif(Pageable pageable);
+
+    /**
      * Liste tous les livres avec pagination.
      * Exemple : page 1, taille 20, trié par titre.
      */

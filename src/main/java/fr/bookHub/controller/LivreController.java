@@ -21,11 +21,16 @@ public class LivreController {
     }
 
 
+    @GetMapping("/active")
+    public Page<LivreDto> getAllActif(Pageable pageable) {
+        return livreService.consulterTousActif(pageable).map(LivreDto::fromEntity);
+    }
+
     @GetMapping
+    @PreAuthorize("hasAnyRole('LIBRARIAN','ADMIN')")
     public Page<LivreDto> getAll(Pageable pageable) {
         return livreService.consulterTous(pageable).map(LivreDto::fromEntity);
     }
-
 
     @GetMapping("/{id}")
     public LivreDto getById(@PathVariable Integer id) {

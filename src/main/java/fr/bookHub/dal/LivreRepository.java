@@ -11,6 +11,9 @@ import java.util.List;
 
 public interface LivreRepository extends JpaRepository<Livre, Integer> {
 
+    // chercher tous les livres actifs
+    Page<Livre> findAllByActifIsTrue(Pageable pageable);
+
     // ✅ Vérification unicité ISBN (création)
     boolean existsByIsbn(String isbn);
 
