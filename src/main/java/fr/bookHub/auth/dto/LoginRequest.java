@@ -6,7 +6,8 @@ public record LoginRequest(
         @NotBlank(message = "L'email est obligatoire")
         String email,
         @NotBlank(message = "Le mot de passe est obligatoire")
-        String password) {
+        String password
+) {
 
         // SÉCURITÉ : On écrase le toString() par défaut
         // pour éviter que le mot de passe n'apparaisse dans les logs serveur

@@ -81,5 +81,17 @@ VALUES
 
 GO
 
+INSERT INTO BOOKHUB_RESERVATION
+(request_date, availability_date, status, user_id, book_id)
+VALUES
+    (
+        '2026-01-08 14:00:00',
+        '2026-01-11 09:00:00',
+        'DISPONIBLE',
+        6,
+        1
+    );
+
+
 
 
