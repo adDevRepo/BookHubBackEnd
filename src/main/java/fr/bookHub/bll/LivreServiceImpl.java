@@ -102,6 +102,12 @@ public class LivreServiceImpl implements LivreService {
 
     @Override
     @Transactional(readOnly = true)
+    public Page<Livre> consulterTousActif(Pageable pageable) {
+        return livreRepository.findAllByActifIsTrue(pageable);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
     public Page<Livre> consulterTous(Pageable pageable) {
         return livreRepository.findAll(pageable);
     }

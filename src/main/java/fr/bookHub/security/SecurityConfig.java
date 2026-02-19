@@ -1,20 +1,88 @@
 package fr.bookHub.security;
 
 import fr.bookHub.auth.JwtAuthFilter;
+import fr.bookHub.dal.UtilisateurRepository;
+import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.http.HttpMethod;
+import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.AuthenticationProvider;
+import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
+import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
+import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
+import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
+import org.springframework.security.core.userdetails.UserDetailsService;
+import org.springframework.security.core.userdetails.User;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 
+import org.springframework.web.cors.CorsConfiguration;
+import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
+import org.springframework.web.cors.CorsConfigurationSource;
+
+import java.util.List;
+
 @Configuration
 @EnableWebSecurity
+@EnableMethodSecurity(prePostEnabled = true)
+@RequiredArgsConstructor
 public class SecurityConfig {
+
+    private final JwtAuthFilter jwtAuthFilter;
+    private final UtilisateurRepository utilisateurRepository;
+
+    @Bean
+    public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+        http
+                .csrf(AbstractHttpConfigurer::disable)
+
+                // ✅ ACTIVATION CORS
+                .cors(cors -> cors.configurationSource(corsConfigurationSource()))
+
+                .authorizeHttpRequests(auth ->
+                        auth
+                                // Auth public
+                                .requestMatchers("/api/auth/**").permitAll()
+
+                                // Swagger si besoin
+                                // .requestMatchers("/v3/api-docs/**", "/swagger-ui/**").permitAll()
+
+                                // Tout le reste protégé
+                                .anyRequest().authenticated()
+                )
+
+                .sessionManagement(sess ->
+                        sess.sessionCreationPolicy(SessionCreationPolicy.STATELESS)
+                )
+
+                .authenticationProvider(authenticationProvider())
+                .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
+
+        return http.build();
+    }
+
+    // =============================
+    // AUTHENTICATION
+    // =============================
+
+    @Bean
+    public AuthenticationProvider authenticationProvider() {
+        DaoAuthenticationProvider authProvider = new DaoAuthenticationProvider();
+        authProvider.setUserDetailsService(userDetailsService());
+        authProvider.setPasswordEncoder(passwordEncoder());
+        return authProvider;
+    }
+
+    @Bean
+    public AuthenticationManager authenticationManager(AuthenticationConfiguration config) throws Exception {
+        return config.getAuthenticationManager();
+    }
 
     @Bean
     public PasswordEncoder passwordEncoder() {
@@ -22,32 +90,44 @@ public class SecurityConfig {
     }
 
     @Bean
-    public SecurityFilterChain securityFilterChain(HttpSecurity http, JwtAuthFilter jwtAuthFilter) throws Exception {
+    public UserDetailsService userDetailsService() {
+        return email -> utilisateurRepository.findByEmail(email)
+                .map(u -> User.builder()
+                        .username(u.getEmail())
+                        .password(u.getPassword())
+                        .roles(u.getRole().getNom().name())
+                        .build())
+                .orElseThrow(() ->
+                        new UsernameNotFoundException("Utilisateur introuvable avec l'email : " + email)
+                );
+    }
 
-        http
-                .csrf(csrf -> csrf.disable())
-                .sessionManagement(sm -> sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+    // =============================
+    // CORS CONFIGURATION
+    // =============================
 
-                .authorizeHttpRequests(auth -> auth
-                        // ✅ Public
-                        .requestMatchers("/login", "/public/**", "/error").permitAll()
+    @Bean
+    public CorsConfigurationSource corsConfigurationSource() {
+        CorsConfiguration config = new CorsConfiguration();
 
-                        // ✅ Swagger / OpenAPI
-                        .requestMatchers("/swagger-ui/**", "/v3/api-docs/**", "/swagger-ui.html").permitAll()
+        // Ton front Angular
+        config.setAllowedOrigins(List.of("http://localhost:4200"));
 
-                        // ✅ TEMP POUR TEST : livres accessibles sans JWT (GET/POST/PUT/DELETE)
-                        // ⚠️ À resserrer plus tard (ex: POST/PUT/DELETE en ADMIN)
-                        .requestMatchers("/api/livres/**").permitAll()
+        config.setAllowedMethods(List.of(
+                "GET",
+                "POST",
+                "PUT",
+                "PATCH",
+                "DELETE",
+                "OPTIONS"
+        ));
 
-                        // ✅ TEMP POUR TEST : emprunts sans JWT
-                        .requestMatchers("/api/emprunts/**").permitAll()
+        config.setAllowedHeaders(List.of("*"));
+        config.setAllowCredentials(true);
 
-                        // 🔒 Tout le reste nécessite un JWT
-                        .anyRequest().authenticated()
-                )
+        UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
+        source.registerCorsConfiguration("/**", config);
 
-                .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
-
-        return http.build();
+        return source;
     }
 }

@@ -11,7 +11,7 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
-@RequestMapping("/api/livres")
+@RequestMapping("/api/books")
 public class LivreController {
 
     private final LivreService livreService;
@@ -21,11 +21,16 @@ public class LivreController {
     }
 
 
+    @GetMapping("/active")
+    public Page<LivreDto> getAllActif(Pageable pageable) {
+        return livreService.consulterTousActif(pageable).map(LivreDto::fromEntity);
+    }
+
     @GetMapping
+    @PreAuthorize("hasAnyRole('LIBRARIAN','ADMIN')")
     public Page<LivreDto> getAll(Pageable pageable) {
         return livreService.consulterTous(pageable).map(LivreDto::fromEntity);
     }
-
 
     @GetMapping("/{id}")
     public LivreDto getById(@PathVariable Integer id) {
@@ -39,7 +44,7 @@ public class LivreController {
     }
 
 
-    @GetMapping("/categorie/{categorieId}")
+    @GetMapping("/categories/{categorieId}")
     public Page<LivreDto> getByCategorie(@PathVariable Integer categorieId, Pageable pageable) {
         return livreService.consulterParCategorie(categorieId, pageable).map(LivreDto::fromEntity);
     }

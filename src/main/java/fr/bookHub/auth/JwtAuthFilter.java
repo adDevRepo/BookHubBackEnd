@@ -65,14 +65,6 @@ public class JwtAuthFilter extends OncePerRequestFilter {
                     null,
                     List.of(authority) // On donne la vraie autorité ici
             );
-
-            // Cela nous permettra ensuite de sécuriser les contrôleurs très facilement comme ceci :
-            /*
-                @PreAuthorize("hasRole('ADMIN')") // Marche car on a ajouté "ROLE_" + "ADMIN"
-                @DeleteMapping("/books/{id}")
-                public void deleteBook(...) { ... }
-            * */
-
             authToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
             SecurityContextHolder.getContext().setAuthentication(authToken);
         }

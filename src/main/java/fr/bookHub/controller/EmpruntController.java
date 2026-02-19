@@ -1,83 +1,157 @@
 package fr.bookHub.controller;
 
 import fr.bookHub.bll.EmpruntService;
+import fr.bookHub.bll.UtilisateurService;
 import fr.bookHub.bo.Emprunt;
+import fr.bookHub.bo.Utilisateur;
 import fr.bookHub.dto.EmpruntDto;
+import jakarta.persistence.EntityNotFoundException;
 import jakarta.validation.Valid;
+import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
 
 @RestController
-@RequestMapping("/api/emprunts")
+@RequestMapping("/api/loans")
+@RequiredArgsConstructor
 public class EmpruntController {
 
     private final EmpruntService empruntService;
+    private final UtilisateurService utilisateurService;
 
-    public EmpruntController(EmpruntService empruntService) {
-        this.empruntService = empruntService;
-    }
 
     /**
-     * ✅ Créer un emprunt
-     * POST /api/emprunts
-     * Body: { "utilisateurId": 1, "livreId": 5 }
+     * 1. CRÉER UN EMPRUNT (Self-service ou Bibliothécaire)
+     * POST /api/loans
+     * Accès : Tout utilisateur connecté (READER, ADMIN, LIBRARIAN)
      */
     @PostMapping
-    @ResponseStatus(HttpStatus.CREATED)
-    public EmpruntDto emprunter(@Valid @RequestBody EmpruntDto dto) {
-        Emprunt emprunt = empruntService.emprunterLivre(dto.utilisateurId(), dto.livreId());
-        return EmpruntDto.fromEntity(emprunt);
+    public ResponseEntity<EmpruntDto.Response> emprunter(@Valid @RequestBody EmpruntDto.Request request) {
+        try {
+            // A. On récupère l'utilisateur qui fait la requête
+            Utilisateur connectedUser = getUtilisateurConnecte();
+
+            // B. On détermine QUI va être l'emprunteur final
+            Integer emprunteurId = connectedUser.getId(); // Par défaut : Soi-même
+
+            // Si c'est un membre du staff, il a le droit d'emprunter pour quelqu'un d'autre
+            boolean isStaff = connectedUser.getRole().getNom().name().equals("ADMIN")
+                    || connectedUser.getRole().getNom().name().equals("LIBRARIAN");
+
+            if (isStaff && request.utilisateurId() != null) {
+                // Le staff a précisé un ID cible, on prend celui-là
+                emprunteurId = request.utilisateurId();
+            }
+            // Sinon (READER ou Staff sans ID précisé) -> emprunteurId reste connectedUser.getId()
+
+            // C. Appel du service
+            Emprunt emprunt = empruntService.emprunterLivre(emprunteurId, request.livreId());
+
+            return ResponseEntity.status(HttpStatus.CREATED)
+                    .body(EmpruntDto.Response.fromEntity(emprunt));
+
+        } catch (EntityNotFoundException e) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, e.getMessage());
+        } catch (IllegalStateException e) {
+            // Règles métier (Quota, Retard, Stock...) -> 409 Conflict
+            throw new ResponseStatusException(HttpStatus.CONFLICT, e.getMessage());
+        }
     }
 
     /**
-     * ✅ Retourner un emprunt
-     * POST /api/emprunts/{empruntId}/retour
+     * 2. RETOURNER UN LIVRE (Action Bibliothécaire)
+     * PATCH /api/loans/{empruntId}/return
+     * Accès : ADMIN ou LIBRARIAN
      */
-    @PreAuthorize("hasAnyRole('LIBRARIAN','ADMIN')")
-    @PostMapping("/{empruntId}/retour")
-    public EmpruntDto retourner(@PathVariable Integer empruntId) {
-        Emprunt emprunt = empruntService.retournerLivre(empruntId);
-        return EmpruntDto.fromEntity(emprunt);
+    @PreAuthorize("hasAnyRole('ADMIN', 'LIBRARIAN')")
+    @PatchMapping("/{empruntId}/return")
+    public ResponseEntity<EmpruntDto.Response> retourner(@PathVariable Integer empruntId) {
+        try {
+            Emprunt emprunt = empruntService.retournerLivre(empruntId);
+            return ResponseEntity.ok(EmpruntDto.Response.fromEntity(emprunt));
+        } catch (EntityNotFoundException e) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, e.getMessage());
+        } catch (IllegalStateException e) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, e.getMessage());
+        }
     }
 
     /**
-     * ✅ Emprunts EN COURS d’un utilisateur
-     * GET /api/emprunts/utilisateur/{utilisateurId}/en-cours
+     * 3. MES EMPRUNTS EN COURS (Utilisateur Connecté)
+     * GET /api/loans/me/ongoing
+     * Accès : Tout utilisateur connecté
      */
-    @GetMapping("/utilisateur/{utilisateurId}/en-cours")
-    public List<EmpruntDto> empruntsEnCours(@PathVariable Integer utilisateurId) {
-        return empruntService.consulterEmpruntsEnCours(utilisateurId)
-                .stream()
-                .map(EmpruntDto::fromEntity)
-                .toList();
+    @GetMapping("/me/ongoing")
+    public ResponseEntity<List<EmpruntDto.Response>> getMesEmpruntsEnCours() {
+        Utilisateur user = getUtilisateurConnecte();
+
+        List<Emprunt> emprunts = empruntService.getEmpruntsEnCours(user.getId());
+
+        return ResponseEntity.ok(emprunts.stream()
+                .map(EmpruntDto.Response::fromEntity)
+                .toList());
     }
 
     /**
-     * ✅ Historique complet d’un utilisateur
-     * GET /api/emprunts/utilisateur/{utilisateurId}/historique
+     * 4. MON HISTORIQUE PASSÉ (Utilisateur Connecté)
+     * GET /api/loans/me/history
+     * Affiche SEULEMENT les livres rendus.
      */
+    @GetMapping("/me/history")
+    public ResponseEntity<List<EmpruntDto.Response>> getMonHistorique() {
+        Utilisateur user = getUtilisateurConnecte();
 
-    @GetMapping("/utilisateur/{utilisateurId}/historique")
-    public List<EmpruntDto> historique(@PathVariable Integer utilisateurId) {
-        return empruntService.consulterHistoriqueUtilisateur(utilisateurId)
-                .stream()
-                .map(EmpruntDto::fromEntity)
-                .toList();
+        // ✅ Utilisation de la nouvelle méthode filtrée
+        List<Emprunt> emprunts = empruntService.getEmpruntsTermines(user.getId());
+
+        return ResponseEntity.ok(emprunts.stream()
+                .map(EmpruntDto.Response::fromEntity)
+                .toList());
     }
 
     /**
-     * ✅ Tous les emprunts en retard (bibliothécaire)
-     * GET /api/emprunts/en-retard
+     * 5. HISTORIQUE D'UN UTILISATEUR SPÉCIFIQUE (Vue Bibliothécaire)
+     * GET /api/loans/user/{userId}
+     * Accès : ADMIN ou LIBRARIAN
      */
+    @PreAuthorize("hasAnyRole('ADMIN', 'LIBRARIAN')")
+    @GetMapping("/user/{userId}")
+    public ResponseEntity<List<EmpruntDto.Response>> getEmpruntsUser(@PathVariable Integer userId) {
+        try {
+            List<Emprunt> emprunts = empruntService.getEmpruntsUtilisateur(userId);
+            return ResponseEntity.ok(emprunts.stream()
+                    .map(EmpruntDto.Response::fromEntity)
+                    .toList());
+        } catch (EntityNotFoundException e) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Utilisateur introuvable");
+        }
+    }
 
-    @GetMapping("/en-retard")
-    public List<EmpruntDto> enRetard() {
-        return empruntService.consulterEmpruntsEnRetard()
-                .stream()
-                .map(EmpruntDto::fromEntity)
-                .toList();
+    /**
+     * 6. LISTE DES RETARDS (Dashboard)
+     * GET /api/loans/overdue
+     * Accès : ADMIN ou LIBRARIAN
+     */
+    @PreAuthorize("hasAnyRole('ADMIN', 'LIBRARIAN')")
+    @GetMapping("/overdue")
+    public ResponseEntity<List<EmpruntDto.Response>> getRetards() {
+        List<Emprunt> retards = empruntService.getEmpruntsEnRetard();
+
+        return ResponseEntity.ok(retards.stream()
+                .map(EmpruntDto.Response::fromEntity)
+                .toList());
+    }
+
+    // --- Helper ---
+    private Utilisateur getUtilisateurConnecte() {
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        return utilisateurService.consulterParEmail(auth.getName());
     }
 }
