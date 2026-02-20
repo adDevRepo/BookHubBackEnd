@@ -18,6 +18,7 @@ public class ReservationDTO {
         // Infos simplifiées du Livre (pas besoin de tout l'objet Livre)
         Integer livreId,
         String livreTitre,
+        String livreAuteur,
 
         // Infos simplifiées de l'Utilisateur (utile pour l'admin)
         Integer utilisateurId,
@@ -37,6 +38,7 @@ public class ReservationDTO {
                     // Gestion null-safe pour le livre
                     (r.getLivre() != null) ? r.getLivre().getId() : null,
                     (r.getLivre() != null) ? r.getLivre().getTitre() : "Livre inconnu",
+                    r.getLivre() != null ? r.getLivre().getAuteur() : "Auteur inconnu",
 
                     // Gestion null-safe pour l'utilisateur
                     (r.getUtilisateur() != null) ? r.getUtilisateur().getId() : null,
@@ -44,6 +46,7 @@ public class ReservationDTO {
             );
         }
     }
+
 
     public record Request(
             @NotNull(message = "L'ID du livre est obligatoire")
